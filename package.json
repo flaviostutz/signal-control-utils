@@ -1,6 +1,6 @@
 {
   "name": "signal-control-utils",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Common utilities for signal processing and control based on NodeJS",
   "main": "index.js",
   "dependencies": {
@@ -8,7 +8,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Flavio Stutz",
+  "author": "flaviostutz",
   "license": "MIT",
   "repository": {
     "type": "git",
