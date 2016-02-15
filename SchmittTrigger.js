@@ -50,5 +50,9 @@ _proto._trigger = function(value) {
 }
 
 _proto.getLastTriggerValue = function() {
+	return this._lastTriggerValue;
+}
+
+_proto.getLastValue = function() {
 	return this._lastValue;
 }
