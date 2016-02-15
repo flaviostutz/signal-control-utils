@@ -1,6 +1,6 @@
 {
   "name": "signal-control-utils",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Common utilities for signal processing and control based on NodeJS",
   "main": "index.js",
   "dependencies": {

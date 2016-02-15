@@ -14,7 +14,7 @@ _proto._currentSpeed = null;
 //METHODS
 _proto.updateValue = function(value) {
 	if(this._lastValue!=null) {
-		console.info(">>>> " + value + "    -----      " + (value - this._lastValue) + "     ====    " + ((new Date().getTime() - this._lastValueDate.getTime())/1000.0));
+//		console.info(">>>> " + value + "    -----      " + (value - this._lastValue) + "     ====    " + ((new Date().getTime() - this._lastValueDate.getTime())/1000.0));
 		this._currentSpeed = (value - this._lastValue)/((new Date().getTime() - this._lastValueDate.getTime())/1000.0);
 	}
 	this._lastValue = value;
