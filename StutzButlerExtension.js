@@ -116,62 +116,7 @@ _proto._init = function() {
     },
 
     function(callback) {
-      console.info(">>> Connecting to MQTT server " + _this._mqttServerUrl + " (" + _this._mqttBaseTopic + ")...");
-      //Emitted on successful (re)connection (i.e. connack rc=0).
-      _this._mqttClient = mqtt.connect(_this._mqttServerUrl);
-      _this._mqttClient.on('connect', function (connack) {
-        console.log('[mqttClient#connect]');
-
-        _this._mqttClient.publish(_this._mqttBaseTopic,
-                JSON.stringify({
-                    extensionName: _this._extensionName,
-                    lastConnectionTime: new Date()
-                }),
-                _this._defaultMqttOptions);
-
-        // /[building-id]/devices/[device-hub-id]/[port-number]/[extension name]/actuators|sensors/[register name]
-        var topicFilter = _this._mqttBaseTopic + "actuators/+";
-        console.info("Subscribing to '" + topicFilter);
-        _this._mqttClient.subscribe(topicFilter, {qos:0}, function() {
-          console.info("OK");
-          callback();
-        });
-      });
-
-      //Emitted when the client receives a published packet
-      _this._mqttClient.on('message', function (topic, message, packet) {
-        //ignore self messages
-        if(packet.clientId==_this._mqttClient.clientId) {
-          console.info("Ignoring self message. This should not happen");
-          return;
-        }
-        console.info('[mqttClient#message %s %s]', topic, message);
-        var messageObj = JSON.parse(message);
-        var a = 0;
-        if(topic.charAt(0)=='/') {
-          a = 1;
-        }
-        var topicParts = topic.split("/");
-//        var registerType = topicParts[a+6];
-        var registerName = topicParts[a+7];
-        _this._actuatorRegisters[registerName] = messageObj;
-        _this.processActuatorMessage(registerName, messageObj);
-      });
-      //Emitted after a disconnection.
-      _this._mqttClient.on('close', function () {
-        console.log('[mqttClient#close]');
-        _this._cleanupAndExit(1);
-      });
-      //Emitted when the client goes offline
-      _this._mqttClient.on('offline', function () {
-        console.log('[mqttClient#offline]');
-        _this._cleanupAndExit(1);
-      });
-      //Emitted when there is an error
-      _this._mqttClient.on('error', function (err) {
-        console.error('[mqttClient#error %s]', err);
-        _this._cleanupAndExit(1);
-      });
+		_this._mqttConnect(callback);
     },
 
     function(callback) {
@@ -241,6 +186,76 @@ _proto.getSensorRegisterValue = function(registerName) {
 _proto.getActuatorRegisterValue = function(registerName) {
   return this._actuatorRegisters[registerName];
 }
+
+_proto._mqttConnect = function(callback) {
+	var _this = this;
+	try {
+		if(this._mqttClient!=null) {
+			this._mqttClient.end(true);
+		}
+		
+	} finally {
+	  console.info(">>> Connecting to MQTT server " + this._mqttServerUrl + " (" + this._mqttBaseTopic + ")...");
+	  //Emitted on successful (re)connection (i.e. connack rc=0).
+	  this._mqttClient = mqtt.connect(this._mqttServerUrl);
+	  this._mqttClient.on('connect', function (connack) {
+		console.log('[mqttClient#connect]');
+
+		_this._mqttClient.publish(_this._mqttBaseTopic,
+				JSON.stringify({
+					extensionName: _this._extensionName,
+					lastConnectionTime: new Date()
+				}),
+				_this._defaultMqttOptions);
+
+		// /[building-id]/devices/[device-hub-id]/[port-number]/[extension name]/actuators|sensors/[register name]
+		var topicFilter = _this._mqttBaseTopic + "actuators/+";
+		console.info("Subscribing to '" + topicFilter);
+		_this._mqttClient.subscribe(topicFilter, {qos:0}, function() {
+		  console.info("OK");
+		  if(callback!=null) {
+			callback();
+		  }
+		});
+	  });
+
+	  //Emitted when the client receives a published packet
+	  this._mqttClient.on('message', function (topic, message, packet) {
+		//ignore self messages
+		if(packet.clientId==_this._mqttClient.clientId) {
+		  console.info("Ignoring self message. This should not happen");
+		  return;
+		}
+		console.info('[mqttClient#message %s %s]', topic, message);
+		var messageObj = JSON.parse(message);
+		var a = 0;
+		if(topic.charAt(0)=='/') {
+		  a = 1;
+		}
+		var topicParts = topic.split("/");
+	//        var registerType = topicParts[a+6];
+		var registerName = topicParts[a+7];
+		_this._actuatorRegisters[registerName] = messageObj;
+		_this.processActuatorMessage(registerName, messageObj);
+	  });
+	  //Emitted after a disconnection.
+	  this._mqttClient.on('close', function () {
+		console.log('[mqttClient#close]');
+		_this._mqttConnect();
+	  });
+	  //Emitted when the client goes offline
+	  this._mqttClient.on('offline', function () {
+		console.log('[mqttClient#offline]');
+		_this._mqttConnect();
+	  });
+	  //Emitted when there is an error
+	  this._mqttClient.on('error', function (err) {
+		console.error('[mqttClient#error %s]', err);
+		_this._mqttConnect();
+	  });
+	}
+}
+
 
 /**
  * Start calling step() in a loop until stop() is called.
