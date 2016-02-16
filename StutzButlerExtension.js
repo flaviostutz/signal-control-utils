@@ -54,6 +54,7 @@ var Raspi = require("raspi-io");
 //PRIVATE VARIABLES
 _proto._board = null;
 _proto._serialPortDev = null;
+_proto._mqttReconnectScheduled = false;
 _proto._mqttServerUrl = null;
 _proto._mqttBaseTopic = null;
 _proto._restApiPort = null;
@@ -197,6 +198,7 @@ _proto._mqttConnect = function(callback) {
 	} finally {
 	  console.info(">>> Connecting to MQTT server " + this._mqttServerUrl + " (" + this._mqttBaseTopic + ")...");
 	  //Emitted on successful (re)connection (i.e. connack rc=0).
+	  _this._mqttReconnectScheduled = false;
 	  this._mqttClient = mqtt.connect(this._mqttServerUrl);
 	  this._mqttClient.on('connect', function (connack) {
 		console.log('[mqttClient#connect]');
@@ -241,17 +243,26 @@ _proto._mqttConnect = function(callback) {
 	  //Emitted after a disconnection.
 	  this._mqttClient.on('close', function () {
 		console.log('[mqttClient#close]');
-		_this._mqttConnect();
+		if(!_this._mqttReconnectScheduled) {
+			setTimeout(function(){_this._mqttConnect(null)}, 1000);
+			_this._mqttReconnectScheduled = true;
+		}
 	  });
 	  //Emitted when the client goes offline
 	  this._mqttClient.on('offline', function () {
 		console.log('[mqttClient#offline]');
-		_this._mqttConnect();
+		if(!_this._mqttReconnectScheduled) {
+			setTimeout(function(){_this._mqttConnect(null)}, 1000);
+			_this._mqttReconnectScheduled = true;
+		}
 	  });
 	  //Emitted when there is an error
 	  this._mqttClient.on('error', function (err) {
 		console.error('[mqttClient#error %s]', err);
-		_this._mqttConnect();
+		if(!_this._mqttReconnectScheduled) {
+			setTimeout(function(){_this._mqttConnect(null)}, 1000);
+			_this._mqttReconnectScheduled = true;
+		}
 	  });
 	}
 }
